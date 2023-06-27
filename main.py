@@ -43,8 +43,11 @@ if __name__ == '__main__':
 
     parent_dir = os.path.dirname(os.path.abspath(__file__))
     file_path = os.path.join(parent_dir, f"query\\table_salary_hour.sql")
-    with open(file_path, 'r') as file:
-        sql_query = file.read()
+    try:
+        with open(file_path, 'r') as file:
+            sql_query = file.read()
+    except FileNotFoundError as e:
+        raise FileNotFoundError(f"File not found: {file_path}") from e
 
     connection_dwh = pg_cursor('postgresql_dwh')
     pg_execute(connection_dwh, sql_query)

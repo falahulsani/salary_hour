@@ -23,8 +23,11 @@ def get_db_config(key: str):
         dict: Database configuration values (host, port, username, password, database) as a dictionary.
     """
 
-    config_key = db_config[key]
-    return config_key
+    try:
+        config_key = db_config[key]
+        return config_key
+    except KeyError as e:
+        raise KeyError(f"Invalid database connection key: {key}") from e
     
 def pg_cursor(connection: str):
     """
@@ -38,16 +41,19 @@ def pg_cursor(connection: str):
 
     """
 
-    credentials = get_db_config(connection)
-    client = psycopg2.connect(
-        host=credentials['host'],
-        port=credentials['port'],
-        database=credentials['database'],
-        user=credentials['username'],
-        password=credentials['password']
-    )
-    client.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-    return client.cursor()
+    try:
+        credentials = get_db_config(connection)
+        client = psycopg2.connect(
+            host=credentials['host'],
+            port=credentials['port'],
+            database=credentials['database'],
+            user=credentials['username'],
+            password=credentials['password']
+        )
+        client.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        return client.cursor()
+    except psycopg2.Error as e:
+        raise psycopg2.Error("Failed to establish a database connection") from e
 
 def pg_read(cursor: pg_cursor, sql: str):
     """
@@ -61,10 +67,13 @@ def pg_read(cursor: pg_cursor, sql: str):
         tuple: A tuple containing a list of column names and a list of query results.
     """
 
-    cursor.execute(sql)
-    column = [desc[0] for desc in cursor.description]
-    data = cursor.fetchall()
-    return column, data
+    try:
+        cursor.execute(sql)
+        column = [desc[0] for desc in cursor.description]
+        data = cursor.fetchall()
+        return column, data
+    except psycopg2.Error as e:
+        raise psycopg2.Error("Failed to execute SQL query") from e
 
 def pg_execute(cursor: pg_cursor, sql: str):
     """
@@ -74,8 +83,12 @@ def pg_execute(cursor: pg_cursor, sql: str):
         cursor (psycopg2.extensions.cursor): PostgreSQL cursor.
         sql (str): SQL query to execute.
     """
-    print(sql)
-    return cursor.execute(sql)
+
+    try:
+        print(sql)
+        return cursor.execute(sql)
+    except psycopg2.Error as e:
+        raise psycopg2.Error("Failed to execute SQL query") from e
 
 def pg_create_table(cursor: pg_cursor, table_name, columns_generate_tables):
     """
@@ -87,10 +100,13 @@ def pg_create_table(cursor: pg_cursor, table_name, columns_generate_tables):
         columns_generate_tables (str): Columns with data types for generating the table, separated by commas.
     """
 
-    query_drop_table = "drop table if exists " + table_name
-    query_create_table = "create table " + table_name + '(' + columns_generate_tables + ')'
-    pg_execute(cursor,query_drop_table)
-    pg_execute(cursor,query_create_table)
+    try:
+        query_drop_table = "DROP TABLE IF EXISTS " + table_name
+        query_create_table = "CREATE TABLE " + table_name + '(' + columns_generate_tables + ')'
+        pg_execute(cursor, query_drop_table)
+        pg_execute(cursor, query_create_table)
+    except psycopg2.Error as e:
+        raise psycopg2.Error("Failed to create table") from e
 
 def pg_execute_batch(cursor, data, table_name, column_in_list):
     """
@@ -104,8 +120,11 @@ def pg_execute_batch(cursor, data, table_name, column_in_list):
 
     """
 
-    values = "VALUES({})".format(",".join(["%s" for _ in column_in_list.split(',')]))
-    insert_stmt = "INSERT INTO {} ({}) {}".format(table_name, column_in_list, values)
-    execute_batch(cur=cursor, sql=insert_stmt, argslist=data)
+    try:
+        values = "VALUES({})".format(",".join(["%s" for _ in column_in_list.split(',')]))
+        insert_stmt = "INSERT INTO {} ({}) {}".format(table_name, column_in_list, values)
+        execute_batch(cur=cursor, sql=insert_stmt, argslist=data)
+    except psycopg2.Error as e:
+        raise psycopg2.Error("Failed to execute batch insert") from e
 
     
