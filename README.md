@@ -7,9 +7,19 @@
 
 **Setup:**
 1. Create your virtual environment:
+   ````
    conda create -n salary_hour
    conda activate salary_hour
+   ````
 2. Install the required library in your terminal:
+   ````
    pip install -r requirements.txt
+   ````
 3. Execute the script by running it with Python:
+   ````
    python main.py
+   ````
+4. After the python code has finished, you can use the following query into BI Tools:
+   ````
+   SELECT year, month, branch_id, salary_per_hour FROM salary_hour
+   ````
